@@ -22,6 +22,11 @@ namespace Com.MasonEntrican.MultiplayerFramework
         [SerializeField]
         private GameObject progressLabel;
 
+        /// <summary>
+        /// Used in the OnConnectedToMaster() callback to keep track of where we are in async connection
+        /// </summary>
+        bool isConnecting;
+
         #endregion
 
 
@@ -69,7 +74,7 @@ namespace Com.MasonEntrican.MultiplayerFramework
         /// </summary>
         public void Connect()
         {
-
+            isConnecting = true;
             progressLabel.SetActive(true);
             controlPanel.SetActive(false);
 
@@ -98,10 +103,13 @@ namespace Com.MasonEntrican.MultiplayerFramework
         public override void OnConnectedToMaster()
         {
             Debug.Log("MultiplayerFramework/Launcher: OnConnectedToMaster() was called by PUN");
-
-            // #Critical
-            // First thing we do is join an existing room. If there is no room we'll be called back with OnJoinRandomFailed()
-            PhotonNetwork.JoinRandomRoom();
+            if (isConnecting)
+            {
+                // #Critical
+                // First thing we do is join an existing room. If there is no room we'll be called back with OnJoinRandomFailed()
+                PhotonNetwork.JoinRandomRoom();
+            }
+            
         }
 
         public override void OnDisconnected(DisconnectCause cause)
@@ -123,6 +131,18 @@ namespace Com.MasonEntrican.MultiplayerFramework
         public override void OnJoinedRoom()
         {
             Debug.Log("MultiplayerFramework/Launcher: OnJoinedRoom() was called by PUN. Now this client is in a room");
+
+            // #Critical
+            // We only load if we are the first player, else we rely on 'PhotonNetwork.AutomaticallySyncScene' to sync our instance scene
+            if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+            {
+                Debug.Log("We load the 'Room for 1' ");
+
+
+                // #Critical
+                // Load the Room Level.
+                PhotonNetwork.LoadLevel("Room for 1");
+            }
         }
 
         #endregion
